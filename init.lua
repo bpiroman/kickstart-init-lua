@@ -386,6 +386,7 @@ do
       { '<leader>s', group = '[S]earch', mode = { 'n', 'v' } },
       { '<leader>t', group = '[T]oggle' },
       { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } }, -- Enable gitsigns recommended keymaps first
+      { '<leader>g', group = 'Lazy[G]it' },
       { 'gr', group = 'LSP Actions', mode = { 'n' } },
     },
   }
@@ -468,6 +469,23 @@ do
 
   -- ... and there is more!
   --  Check out: https://github.com/nvim-mini/mini.nvim
+end
+
+-- ============================================================
+-- SECTION 4b: LAZYGIT
+-- Floating lazygit window (requires the `lazygit` binary on $PATH)
+-- This plugin is configured via vim.g variables, not .setup()
+-- See: https://github.com/kdheepak/lazygit.nvim
+-- ============================================================
+do
+  vim.pack.add { gh 'kdheepak/lazygit.nvim' }
+
+  -- Optional settings (defaults shown):
+  -- vim.g.lazygit_floating_window_winblend = 0       -- transparency
+  -- vim.g.lazygit_floating_window_scaling_factor = 0.9 -- window size
+  -- vim.g.lazygit_use_neovim_remote = 1              -- edit commits in nvim (needs neovim-remote)
+
+  vim.keymap.set('n', '<leader>g', '<cmd>LazyGit<CR>', { desc = 'Lazy[G]it' })
 end
 
 -- ============================================================

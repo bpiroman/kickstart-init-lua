@@ -105,6 +105,8 @@ do
   --  See `:help vim.o`
   -- NOTE: You can change these options as you wish!
   --  For more options, you can see `:help option-list`
+  
+  vim.opt.wrap = false
 
   -- Make line numbers default
   vim.o.number = true

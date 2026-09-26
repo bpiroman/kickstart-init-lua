@@ -187,9 +187,8 @@ do
   --  See `:help hlsearch`
   vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
-  -- Cycle through buffers with Ctrl+Tab and Ctrl+Shift+Tab
-  vim.keymap.set('n', '<C-Tab>', '<cmd>bnext<CR>', { desc = 'Next buffer' })
-  vim.keymap.set('n', '<C-S-Tab>', '<cmd>bprevious<CR>', { desc = 'Prev buffer' })
+  vim.keymap.set('n', '<S-h>', '<cmd>bprevious<CR>', { desc = 'Prev buffer' })
+  vim.keymap.set('n', '<S-l>', '<cmd>bnext<CR>', { desc = 'Next buffer' })
 
   -- Diagnostic Config & Keymaps
   --  See `:help vim.diagnostic.Opts`

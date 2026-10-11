@@ -27,7 +27,7 @@ sudo ln -sf /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim
 | `ripgrep` | Telescope live grep (`<leader>sg`) |
 | `unzip` / `curl` / `tar` / `gzip` | Mason downloads and extracts tools |
 | `lazygit` | `<leader>g` floating lazygit window |
-| `perltidy` | Perl formatter (format-on-save, `<leader>f`) |
+| `perl-tidy` (Arch) / `perltidy` (Ubuntu) | Perl formatter (format-on-save, `<leader>f`) |
 | `perl-perl-critic` / `libperl-critic-perl` | Perl linting (perlcritic) |
 | `perl` | needed by perlcritic and perlnavigator's syntax check |
 | `go` | only needed if you write Go (gopls/golangci-lint are Mason-installed) |
@@ -51,7 +51,7 @@ sudo install lazygit /usr/local/bin && rm lazygit lazygit.tar.gz
 
 ```sh
 sudo pacman -S --needed neovim git base-devel nodejs npm ripgrep unzip curl \
-  lazygit perltidy perl-perl-critic perl go
+  lazygit perl-tidy perl-perl-critic perl go
 ```
 
 ### Optional

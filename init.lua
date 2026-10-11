@@ -266,6 +266,9 @@ do
       tmpl = 'gotmpl',
       -- systemd unit files (Neovim usually detects these already; kept explicit for portability)
       service = 'systemd',
+      -- Mojolicious embedded-Perl templates (not detected by default).
+      -- Treesitter's html parser is registered for this filetype in Section 9.
+      ep = 'html.ep',
     },
     -- Uncomment if your templates are .html files inside a templates/ directory:
     -- pattern = {
@@ -789,6 +792,18 @@ do
     -- But for many setups, the LSP (`ts_ls`) will work just fine
     ts_ls = {}, -- JavaScript / TypeScript errors & diagnostics
 
+    -- Perl. PerlNavigator is the most actively maintained Perl LSP
+    -- (navigation, completion, hover, outline). Install the server itself
+    -- requires node/npm, which Mason handles.
+    perlnavigator = {
+      settings = {
+        perlnavigator = {
+          -- nvim-lint already runs perlcritic; disable it here to avoid duplicate diagnostics
+          perlcriticEnabled = false,
+        },
+      },
+    },
+
     html = { -- HTML errors
       settings = {
         html = {
@@ -861,6 +876,9 @@ do
     'goimports', -- go formatter that also fixes imports
     'golangci-lint', -- go linter (flags unused functions/variables, etc.)
     'prettier', -- formatter for css/js (html is formatted by the html LSP)
+    -- NOTE: the Perl tools (perltidy, perlcritic) are not in the Mason registry.
+    -- Install them via your OS (apt install perltidy libperl-critic-perl)
+    -- or CPAN (cpanm Perl::Tidy Perl::Critic).
   })
 
   require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -889,9 +907,12 @@ do
         html = true,
         css = true,
         javascript = true,
+        perl = true,
       }
       if enabled_filetypes[vim.bo[bufnr].filetype] then
-        return { timeout_ms = 500 }
+        -- perltidy (perl) can be slow on cold starts, so give it more time
+        local timeout_ms = vim.bo[bufnr].filetype == 'perl' and 2000 or 500
+        return { timeout_ms = timeout_ms }
       else
         return nil
       end
@@ -905,6 +926,7 @@ do
       -- html is formatted by the html LSP (see its settings above)
       css = { 'prettier' },
       javascript = { 'prettier' },
+      perl = { 'perltidy' }, -- needs the `perltidy` binary (apt/CPAN, not in Mason)
       -- rust = { 'rustfmt' },
       -- Conform can also run multiple formatters sequentially
       -- python = { "isort", "black" },
@@ -962,6 +984,9 @@ do
     }
     lint.linters_by_ft.systemd = { 'systemd_analyze' }
   end
+
+  -- Lint Perl with perlcritic (needs the `perlcritic` binary, install via apt/CPAN).
+  if vim.fn.executable 'perlcritic' == 1 then lint.linters_by_ft.perl = { 'perlcritic' } end
 
   -- Lint on these events (and when entering a buffer)
   vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWritePost', 'InsertLeave' }, {
@@ -1072,8 +1097,12 @@ do
   }
 
   -- Ensure basic parsers are installed
-  local parsers = { 'bash', 'c', 'css', 'diff', 'go', 'gomod', 'gosum', 'html', 'javascript', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
+  local parsers = { 'bash', 'c', 'css', 'diff', 'go', 'gomod', 'gosum', 'html', 'javascript', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'perl', 'query', 'vim', 'vimdoc' }
   require('nvim-treesitter').install(parsers)
+
+  -- Highlight Mojolicious templates (.ep, filetype `html.ep`) with the html parser.
+  -- The embedded Perl between <% %> tags is left unhighlighted.
+  vim.treesitter.language.register('html', { 'html.ep' })
 
   ---@param buf integer
   ---@param language string

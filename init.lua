@@ -264,12 +264,29 @@ do
       gohtml = 'gotmpl',
       gotmpl = 'gotmpl',
       tmpl = 'gotmpl',
+      -- systemd unit files (Neovim usually detects these already; kept explicit for portability)
+      service = 'systemd',
     },
     -- Uncomment if your templates are .html files inside a templates/ directory:
     -- pattern = {
     --   ['.*/templates/.*%.html'] = 'gotmpl',
     -- },
   }
+
+  -- HTML: always use 2-space indentation.
+  -- Without this, html files that contain tab characters get rendered with the
+  -- default tabstop of 8 (very deep indents, shown as `»` by 'listchars').
+  vim.api.nvim_create_autocmd('FileType', {
+    desc = 'Use 2-space indentation for HTML files',
+    group = vim.api.nvim_create_augroup('html-indent', { clear = true }),
+    pattern = 'html',
+    callback = function()
+      vim.bo.expandtab = true
+      vim.bo.tabstop = 2
+      vim.bo.softtabstop = 2
+      vim.bo.shiftwidth = 2
+    end,
+  })
 end
 
 -- ============================================================
@@ -363,7 +380,11 @@ do
   -- We first install it from https://github.com/NMAC427/guess-indent.nvim
   -- and then call its `setup()` function to start it with default settings.
   vim.pack.add { gh 'NMAC427/guess-indent.nvim' }
-  require('guess-indent').setup {}
+  require('guess-indent').setup {
+    -- HTML indentation is pinned to 2 spaces by the FileType autocmd above;
+    -- don't let guess-indent override it based on the file's existing tabs.
+    filetype_exclude = { 'netrw', 'tutor', 'html' },
+  }
 
   -- Here is a more advanced configuration example that passes options to `gitsigns.nvim`
   --
@@ -910,6 +931,38 @@ do
     go = { 'golangcilint' },
   }
 
+  -- Lint systemd unit files (.service, .timer, etc.) with `systemd-analyze verify`.
+  -- Its output looks like: /path/unit.service:6: Unknown key 'BadKey' in section [Service], ignoring.
+  if vim.fn.executable 'systemd-analyze' == 1 then
+    lint.linters.systemd_analyze = {
+      cmd = 'systemd-analyze',
+      stdin = false,
+      args = { 'verify' },
+      stream = 'stderr', -- systemd-analyze reports on stderr and exits 0 even with warnings
+      ignore_exitcode = true,
+      parser = function(output, bufnr)
+        -- `verify` can also report on other units it pulls in; only keep
+        -- diagnostics that belong to the file in the current buffer.
+        local bufname = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ':p')
+        local diagnostics = {}
+        for line in vim.gsplit(output, '\n', { plain = true }) do
+          local file, lnum, message = line:match('^(.-):(%d+): (.+)$')
+          if file and lnum and message and vim.fn.fnamemodify(file, ':p') == bufname then
+            table.insert(diagnostics, {
+              lnum = tonumber(lnum) - 1,
+              col = 0,
+              message = message,
+              severity = vim.diagnostic.severity.WARN,
+              source = 'systemd-analyze',
+            })
+          end
+        end
+        return diagnostics
+      end,
+    }
+    lint.linters_by_ft.systemd = { 'systemd_analyze' }
+  end
+
   -- Lint on these events (and when entering a buffer)
   vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWritePost', 'InsertLeave' }, {
     group = vim.api.nvim_create_augroup('kickstart-lint', { clear = true }),
@@ -1039,8 +1092,12 @@ do
     -- in case there is no indent query, the indentexpr will fallback to the vim's built in one
     local has_indent_query = vim.treesitter.query.get(language, 'indents') ~= nil
 
+    -- The html treesitter indent query tends to over-indent; Vim's built-in
+    -- html indent (with the 2-space settings above) behaves better.
+    local no_ts_indent = { html = true }
+
     -- Enable treesitter based indentation
-    if has_indent_query then vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()" end
+    if has_indent_query and not no_ts_indent[language] then vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()" end
   end
 
   local available_parsers = require('nvim-treesitter').get_available()

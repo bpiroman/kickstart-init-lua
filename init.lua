@@ -257,8 +257,9 @@ do
     callback = function() vim.hl.on_yank() end,
   })
 
-  -- Detect Go templates as `gotmpl` so the html LSP/prettier don't try to format them
-  -- (gotmpl is not in the format-on-save list, so they are left alone)
+  -- NOTE: .html files inside templates/ dirs are Go templates, but we keep
+  -- their filetype as `html` (so the html LSP/treesitter keep working) and
+  -- instead skip them in conform's format_on_save (see Section 7).
   vim.filetype.add {
     extension = {
       gohtml = 'gotmpl',
@@ -269,10 +270,6 @@ do
       -- Mojolicious embedded-Perl templates (not detected by default).
       -- Treesitter's html parser is registered for this filetype in Section 9.
       ep = 'html.ep',
-    },
-    -- .html files inside a templates/ directory are Go templates:
-    pattern = {
-      ['.*/templates/.*%.html'] = 'gotmpl',
     },
   }
 
@@ -899,6 +896,9 @@ do
   require('conform').setup {
     notify_on_error = false,
     format_on_save = function(bufnr)
+      -- Never format Go templates (.html under a templates/ dir): the html
+      -- formatter mangles {{ }} syntax (e.g. 'eq .Type' -> 'eq.Type').
+      if vim.api.nvim_buf_get_name(bufnr):match '/templates/.*%.html$' then return nil end
       -- You can specify filetypes to autoformat on save here:
       local enabled_filetypes = {
         -- lua = true,

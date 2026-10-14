@@ -270,10 +270,10 @@ do
       -- Treesitter's html parser is registered for this filetype in Section 9.
       ep = 'html.ep',
     },
-    -- Uncomment if your templates are .html files inside a templates/ directory:
-    -- pattern = {
-    --   ['.*/templates/.*%.html'] = 'gotmpl',
-    -- },
+    -- .html files inside a templates/ directory are Go templates:
+    pattern = {
+      ['.*/templates/.*%.html'] = 'gotmpl',
+    },
   }
 
   -- HTML: always use 2-space indentation.
